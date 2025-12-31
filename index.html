@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PemTok New Year 2026 - Drag & Zoom</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #000;
+        font-family: "Inter", sans-serif;
+        cursor: grab;
+      }
+      body.grabbing {
+        cursor: grabbing;
+      }
+      canvas {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1;
+        outline: none;
+      }
+
+      #input_video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 640px;
+        height: 480px;
+        opacity: 0;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      #ui-layer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      /* Titles */
+      .header {
+        padding: 40px;
+        text-align: center;
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+        pointer-events: auto;
+        position: relative;
+      }
+
+      #main-title {
+        font-family: "Cinzel", serif;
+        font-weight: 700;
+        font-size: 3rem;
+        margin: 0;
+        color: #ffd700;
+        text-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        transition: opacity 1s;
+      }
+
+      #happy-new-year {
+        font-family: "Cinzel", serif;
+        font-weight: 700;
+        font-size: 5rem;
+        margin: 0;
+        background: linear-gradient(to right, #ffd700, #fff, #ffd700);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 50px rgba(255, 215, 0, 0.8);
+        letter-spacing: 8px;
+        text-transform: uppercase;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0;
+        width: 100%;
+        text-align: center;
+        transition: all 2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      #countdown-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: "Cinzel", serif;
+        font-size: 15rem;
+        color: #ffd700;
+        text-shadow: 0 0 80px rgba(212, 175, 55, 0.6);
+        display: none;
+        animation: pulse 1s infinite;
+        z-index: 20;
+        text-align: center;
+        width: 100%;
+      }
+      @keyframes pulse {
+        0% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(0.95);
+          opacity: 0.8;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 1;
+        }
+      }
+
+      /* Manual Buttons Area */
+      #manual-controls {
+        position: absolute;
+        bottom: 50px; /* iPhone Home Indicator Area */
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        z-index: 50;
+        pointer-events: auto;
+
+        /* Modern Glassmorphism (iPhone Style) */
+        /* background: rgba(20, 20, 20, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 8px 12px;
+        border-radius: 40px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        max-width: 95%;
+        flex-wrap: nowrap; */
+      }
+
+      .action-btn {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 12px 20px;
+        font-family: "Inter", sans-serif;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        border-radius: 30px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        min-width: auto;
+        white-space: nowrap;
+      }
+      .action-btn:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+      }
+      .action-btn.active {
+        background: rgba(255, 215, 0, 0.2);
+        color: #ffd700;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+      }
+
+      /* Mobile Tweaks */
+      @media (max-width: 768px) {
+        #manual-controls {
+          bottom: 30px;
+          padding: 5px;
+          width: auto;
+          max-width: 90%;
+        }
+        .action-btn {
+          font-size: 0.8rem;
+          padding: 10px 12px;
+        }
+        #main-title {
+          font-size: 1.8rem;
+          letter-spacing: 2px;
+        }
+        #happy-new-year {
+          font-size: 2.5rem;
+        }
+        #countdown-overlay {
+          font-size: 8rem;
+        }
+
+        /* Resize Camera for Mobile */
+        .cam-frame {
+          width: 100px;
+          height: 100px;
+          bottom: 10px;
+          right: 10px;
+          border-radius: 10px;
+        }
+        #gesture-feedback {
+          width: 60px;
+          bottom: 120px;
+          right: 10px;
+          font-size: 0.65rem;
+        }
+      }
+
+      /* Camera Frame - Floating Island */
+      .cam-frame {
+        position: absolute;
+        bottom: 10px; /* Closer to edge */
+        right: 18px;
+        width: 140px;
+        height: 140px;
+        border-radius: 10px; /* Sharper radius */
+        background: #000;
+        overflow: hidden;
+        pointer-events: auto;
+        z-index: 30;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        border: none;
+        transition: 0.3s;
+      }
+      #preview_video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+        opacity: 0.95;
+      }
+      #gesture-feedback {
+        position: absolute;
+        bottom: 160px; /* Above the camera frame */
+        right: 10px;
+        width: 140px;
+        text-align: center;
+        /* Subtle glass background for visibility */
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        border-radius: 12px;
+        padding: 6px 8px;
+        color: #ffd700;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        font-size: 0.75rem;
+        font-weight: 600;
+        z-index: 31;
+        pointer-events: none;
+        letter-spacing: 0.5px;
+      }
+
+      .controls {
+        padding: 20px;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+        pointer-events: auto;
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        align-items: center;
+      }
+
+      /* Add Photo Button (Styled as Glass) */
+      .upload-trigger {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        padding: 10px 24px;
+        border-radius: 30px;
+        cursor: pointer;
+        text-transform: uppercase;
+        font-family: "Inter", sans-serif;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: 0.3s;
+        margin-left: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      }
+      .upload-trigger:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      }
+
+      /* Start Screen Container */
+      #start-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* Start Button - Premium Glass */
+      .btn-gold {
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        padding: 20px 60px;
+        color: #ffd700;
+        font-family: "Cinzel", serif;
+        font-weight: 700;
+        font-size: 1.5rem;
+        cursor: pointer;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        transition: all 0.4s ease;
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.1);
+        border-radius: 60px;
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+      }
+      .btn-gold:hover {
+        background: rgba(255, 215, 0, 0.25);
+        box-shadow: 0 0 50px rgba(255, 215, 0, 0.4);
+        transform: scale(1.05);
+        border-color: rgba(255, 215, 0, 0.6);
+      }
+
+      #loading-text {
+        margin-top: 30px;
+        color: rgba(255, 255, 255, 0.5);
+        font-family: "Inter", sans-serif;
+        font-size: 0.9rem;
+        letter-spacing: 2px;
+        display: none;
+      }
+
+      .status-dot {
+        width: 12px;
+        height: 12px;
+        background: rgba(255, 0, 0, 0.6);
+        border-radius: 50%;
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 100;
+        transition: 0.3s;
+        box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+      }
+      .status-dot.active {
+        background: #00ff00;
+        box-shadow: 0 0 15px #00ff00;
+      }
+    </style>
+
+    <script
+      async
+      src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"
+    ></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <div id="ui-layer">
+      <div class="header">
+        <h1 id="main-title">READY</h1>
+        <div class="status-dot" id="hand-dot"></div>
+      </div>
+
+      <div id="happy-new-year">HAPPY NEW YEAR<br />2026</div>
+      <div id="countdown-overlay">10</div>
+
+      <!-- Manual Controls (Dock) -->
+      <div id="manual-controls">
+        <button id="btn-countdown" class="action-btn">START COUNTDOWN</button>
+        <button id="btn-gallery" class="action-btn" style="display: none">
+          OPEN GALLERY
+        </button>
+        <button id="btn-zoom" class="action-btn" style="display: none">
+          ZOOM PHOTO
+        </button>
+        <button
+          class="upload-trigger"
+          id="btn-add-photo"
+          onclick="document.getElementById('file-input').click()"
+          style="display: none"
+        >
+          + ADD PHOTO
+        </button>
+      </div>
+
+      <div class="cam-frame">
+        <video id="preview_video" autoplay playsinline muted></video>
+      </div>
+
+      <div id="gesture-feedback">Waiting...</div>
+
+      <input
+        type="file"
+        id="file-input"
+        multiple
+        accept="image/*"
+        style="display: none"
+      />
+    </div>
+
+    <video id="input_video" playsinline></video>
+
+    <div id="start-screen">
+      <button class="btn-gold" id="btn-start">Start Experience</button>
+      <div id="loading-text">Initializing...</div>
+    </div>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+      import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+      import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+
+      // --- GAME STATES ---
+      const STATE = {
+        IDLE: 0,
+        COUNTDOWN: 1,
+        CELEBRATION: 2,
+      };
+
+      let currentState = STATE.IDLE;
+      let countdownValue = 10;
+      let countdownInterval = null;
+
+      // --- CONTROL VARIABLES ---
+      let handX = 0.5;
+      let cameraAngle = 0;
+      let isHandDetected = false;
+      let interactionMode = "hand"; // 'hand' or 'manual'
+
+      // Manual triggers
+      let isGalleryOpen = false;
+      let isZooming = false;
+
+      // Mouse Navigation
+      let isDragging = false;
+      let previousMouseX = 0;
+      let zoomLevel = 0;
+
+      // Visual Vars
+      let currentMorph = 1.0;
+      let targetMorph = 1.0;
+
+      // --- SCENE SETUP ---
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color("#000");
+      scene.fog = new THREE.FogExp2("#000", 0.015);
+
+      const camera = new THREE.PerspectiveCamera(
+        50,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(0, 0, 70);
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: false,
+        powerPreference: "high-performance",
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      document.body.appendChild(renderer.domElement);
+
+      // --- MOUSE & DRAG HANDLERS ---
+      document.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        previousMouseX = e.clientX;
+        document.body.classList.add("grabbing");
+      });
+
+      document.addEventListener("mouseup", () => {
+        isDragging = false;
+        document.body.classList.remove("grabbing");
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (isDragging) {
+          const deltaX = e.clientX - previousMouseX;
+          cameraAngle -= deltaX * 0.005; // Adjust sensitivity here
+          previousMouseX = e.clientX;
+        }
+      });
+
+      document.addEventListener(
+        "wheel",
+        (e) => {
+          zoomLevel += e.deltaY * 0.05;
+          // Clamp zoom is handled in animate loop
+        },
+        { passive: true }
+      );
+
+      // Touch support for dragging
+      let previousTouchX = 0;
+      document.addEventListener("touchstart", (e) => {
+        isDragging = true;
+        previousTouchX = e.touches[0].clientX;
+      });
+      document.addEventListener("touchend", () => {
+        isDragging = false;
+      });
+      document.addEventListener("touchmove", (e) => {
+        if (isDragging) {
+          const deltaX = e.touches[0].clientX - previousTouchX;
+          cameraAngle -= deltaX * 0.005;
+          previousTouchX = e.touches[0].clientX;
+        }
+      });
+
+      // --- BUTTON LISTENERS ---
+      const btnCountdown = document.getElementById("btn-countdown");
+      const btnGallery = document.getElementById("btn-gallery");
+      const btnZoom = document.getElementById("btn-zoom");
+      const mainTitle = document.getElementById("main-title");
+
+      btnCountdown.addEventListener("click", startCountdown);
+
+      btnGallery.addEventListener("click", () => {
+        isGalleryOpen = !isGalleryOpen;
+        interactionMode = "manual"; // USER INTENT: Manual override
+        btnGallery.innerText = isGalleryOpen ? "CLOSE GALLERY" : "OPEN GALLERY";
+        btnGallery.classList.toggle("active", isGalleryOpen);
+      });
+
+      btnZoom.addEventListener("mousedown", () => {
+        isZooming = true;
+        btnZoom.classList.add("active");
+      });
+      btnZoom.addEventListener("mouseup", () => {
+        isZooming = false;
+        btnZoom.classList.remove("active");
+      });
+      btnZoom.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        isZooming = true;
+        btnZoom.classList.add("active");
+      });
+      btnZoom.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        isZooming = false;
+        btnZoom.classList.remove("active");
+      });
+
+      // --- SHADER PARTICLES ---
+      const vertexShader = `
+            uniform float uMorph;
+            uniform float uTime;
+            attribute vec3 aChaosPos;
+            attribute vec3 aTargetPos;
+            attribute vec3 aColor;
+            attribute float aSize;
+            attribute float aSpeed;
+            varying vec3 vColor;
+
+            void main() {
+                vColor = aColor;
+                float ease = uMorph * uMorph * (3.0 - 2.0 * uMorph);
+                vec3 pos = mix(aChaosPos, aTargetPos, ease);
+
+                if (uMorph > 0.8) {
+                   float squeeze = 1.0 - ((uMorph - 0.8) * 0.5);
+                   pos *= squeeze;
+                   pos += vec3(sin(uTime * aSpeed * 5.0), cos(uTime * aSpeed * 5.0), 0.0) * 0.1;
+                } else {
+                   pos.x += sin(uTime * aSpeed + pos.y) * 1.0 * (1.0 - uMorph);
+                }
+
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = aSize * (450.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `;
+      const fragmentShader = `
+            varying vec3 vColor;
+            void main() {
+                vec2 center = gl_PointCoord - 0.5;
+                float dist = length(center);
+                if (dist > 0.5) discard;
+                float alpha = 1.0 - smoothstep(0.1, 0.5, dist);
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `;
+
+      const particlesCount = 45000;
+      const galaxyGeo = new THREE.BufferGeometry();
+      const fChaos = [],
+        fTarget = [],
+        fSizes = [],
+        fSpeed = [],
+        fColors = [];
+      const palette = [
+        new THREE.Color("#00FFFF"),
+        new THREE.Color("#FF00FF"),
+        new THREE.Color("#FFD700"),
+        new THREE.Color("#FFFFFF"),
+      ];
+
+      for (let i = 0; i < particlesCount; i++) {
+        const r = 18;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const tr = r + (Math.random() - 0.5);
+        fTarget.push(
+          tr * Math.sin(phi) * Math.cos(theta),
+          tr * Math.sin(phi) * Math.sin(theta),
+          tr * Math.cos(phi)
+        );
+
+        const cr = 70 + Math.random() * 80;
+        fChaos.push(
+          cr * Math.sin(phi) * Math.cos(theta),
+          cr * Math.sin(phi) * Math.sin(theta),
+          cr * Math.cos(phi)
+        );
+
+        fSizes.push(Math.random() * 0.8 + 0.2);
+        fSpeed.push(Math.random());
+        const col = palette[Math.floor(Math.random() * palette.length)];
+        fColors.push(col.r, col.g, col.b);
+      }
+
+      galaxyGeo.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(fTarget, 3)
+      );
+      galaxyGeo.setAttribute(
+        "aChaosPos",
+        new THREE.Float32BufferAttribute(fChaos, 3)
+      );
+      galaxyGeo.setAttribute(
+        "aTargetPos",
+        new THREE.Float32BufferAttribute(fTarget, 3)
+      );
+      galaxyGeo.setAttribute(
+        "aColor",
+        new THREE.Float32BufferAttribute(fColors, 3)
+      );
+      galaxyGeo.setAttribute(
+        "aSize",
+        new THREE.Float32BufferAttribute(fSizes, 1)
+      );
+      galaxyGeo.setAttribute(
+        "aSpeed",
+        new THREE.Float32BufferAttribute(fSpeed, 1)
+      );
+
+      const galaxyMat = new THREE.ShaderMaterial({
+        uniforms: { uMorph: { value: 1.0 }, uTime: { value: 0 } },
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+      const galaxy = new THREE.Points(galaxyGeo, galaxyMat);
+      scene.add(galaxy);
+
+      // --- FIREWORKS ---
+      const fireworks = [];
+      class Firework {
+        constructor() {
+          this.isDead = false;
+          this.pos = new THREE.Vector3(
+            (Math.random() - 0.5) * 80,
+            -40,
+            (Math.random() - 0.5) * 40 - 20
+          );
+          this.targetY = 10 + Math.random() * 20;
+          this.vel = new THREE.Vector3(0, 1.5 + Math.random(), 0);
+          this.color = palette[Math.floor(Math.random() * palette.length)];
+
+          const geo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 0),
+          ]);
+          this.mesh = new THREE.Points(
+            geo,
+            new THREE.PointsMaterial({
+              color: 0xffffff,
+              size: 0.8,
+              transparent: true,
+            })
+          );
+          scene.add(this.mesh);
+          this.state = 0; // 0=Launch
+          this.particles = [];
+        }
+        update() {
+          if (this.state === 0) {
+            this.pos.add(this.vel);
+            this.mesh.position.copy(this.pos);
+            if (this.pos.y >= this.targetY) this.explode();
+          } else {
+            let alive = false;
+            const positions = [];
+            this.particles.forEach((p) => {
+              if (p.life > 0) {
+                p.pos.add(p.vel);
+                p.vel.y -= 0.02;
+                p.vel.multiplyScalar(0.96);
+                p.life -= 0.02;
+                positions.push(p.pos.x, p.pos.y, p.pos.z);
+                alive = true;
+              }
+            });
+            this.mesh.geometry.setAttribute(
+              "position",
+              new THREE.Float32BufferAttribute(positions, 3)
+            );
+            this.mesh.material.opacity -= 0.02;
+            if (!alive) {
+              this.isDead = true;
+              scene.remove(this.mesh);
+            }
+          }
+        }
+        explode() {
+          this.state = 1;
+          this.mesh.material.color.set(this.color);
+          this.mesh.material.size = 0.6;
+          const light = new THREE.PointLight(this.color, 3, 40);
+          light.position.copy(this.pos);
+          scene.add(light);
+          setTimeout(() => scene.remove(light), 150);
+
+          for (let i = 0; i < 60; i++) {
+            const s = 0.5 + Math.random();
+            const theta = Math.random() * Math.PI * 2,
+              phi = Math.random() * Math.PI;
+            this.particles.push({
+              pos: this.pos.clone(),
+              vel: new THREE.Vector3(
+                s * Math.sin(phi) * Math.cos(theta),
+                s * Math.sin(phi) * Math.sin(theta),
+                s * Math.cos(phi)
+              ),
+              life: 1.0,
+            });
+          }
+        }
+      }
+
+      // --- POLAROID SYSTEM ---
+      const polaroidGroup = new THREE.Group();
+      scene.add(polaroidGroup);
+      const polaroids = [];
+
+      function addPolaroid(url) {
+        const group = new THREE.Group();
+
+        const frameGeo = new THREE.PlaneGeometry(6, 7.2);
+        const frameMat = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+        const frame = new THREE.Mesh(frameGeo, frameMat);
+        frame.position.z = -0.05;
+        group.add(frame);
+
+        new THREE.TextureLoader().load(url, (tex) => {
+          const photoGeo = new THREE.PlaneGeometry(5.5, 6); // Taller photo
+          const photoMat = new THREE.MeshBasicMaterial({
+            map: tex,
+            color: 0xcccccc,
+          });
+          const photo = new THREE.Mesh(photoGeo, photoMat);
+          photo.position.y = 0.4; // Adjusted to center in frame
+          group.add(photo);
+        });
+
+        const r = 100;
+        const th = Math.random() * Math.PI * 2;
+        group.position.set(
+          r * Math.cos(th),
+          (Math.random() - 0.5) * 50,
+          r * Math.sin(th)
+        );
+        group.lookAt(0, 0, 0);
+
+        group.userData = {
+          homePos: group.position.clone(),
+          galleryPos: new THREE.Vector3(),
+        };
+        polaroidGroup.add(group);
+        polaroids.push(group);
+        recalcGalleryPositions();
+      }
+
+      function recalcGalleryPositions() {
+        const radius = 22;
+        polaroids.forEach((p, i) => {
+          const angle = (i / polaroids.length) * Math.PI * 2;
+          p.userData.galleryPos.set(
+            Math.sin(angle) * radius,
+            Math.sin(i * 1.5) * 5,
+            Math.cos(angle) * radius
+          );
+        });
+      }
+
+      // --- POST PROCESSING ---
+      const composer = new EffectComposer(renderer);
+      composer.addPass(new RenderPass(scene, camera));
+      const bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        1.5,
+        0.4,
+        0.85
+      );
+      bloomPass.strength = 1.0;
+      bloomPass.radius = 0.5;
+      composer.addPass(bloomPass);
+
+      // --- HAND TRACKING (Optional for Rotation) ---
+      const handDot = document.getElementById("hand-dot");
+      const gestureFeedback = document.getElementById("gesture-feedback");
+
+      function onHandResults(results) {
+        if (
+          results.multiHandLandmarks &&
+          results.multiHandLandmarks.length > 0
+        ) {
+          isHandDetected = true;
+          interactionMode = "hand"; // Switch to hand mode on detection
+          handDot.classList.add("active");
+          const lm = results.multiHandLandmarks[0];
+          handX = lm[9].x;
+
+          // Gesture Recognition
+          const thumb = lm[4];
+          const index = lm[8];
+          const distance = Math.hypot(thumb.x - index.x, thumb.y - index.y);
+
+          if (distance < 0.1) {
+            // FIST / PINCH
+            handDot.style.background = "yellow";
+            gestureFeedback.innerText = "✊ PINCH DETECTED";
+            gestureFeedback.style.color = "yellow";
+
+            if (currentState === STATE.IDLE) {
+              startCountdown();
+            } else if (currentState === STATE.CELEBRATION) {
+              if (!isGalleryOpen) {
+                isGalleryOpen = true;
+              }
+              isZooming = true;
+            }
+          } else if (distance > 0.2) {
+            // OPEN HAND
+            handDot.style.background = "#00ff00";
+            gestureFeedback.innerText = "🖐 OPEN HAND";
+            gestureFeedback.style.color = "#00ff00";
+
+            if (currentState === STATE.CELEBRATION) {
+              // Open hand ensures gallery is open, but doesn't force close if we relax
+              isGalleryOpen = true;
+              isZooming = false;
+            }
+          } else {
+            // Neutral
+            handDot.style.background = "red";
+            gestureFeedback.innerText = "Scanning Hand...";
+            gestureFeedback.style.color = "#fff";
+
+            if (currentState === STATE.CELEBRATION) {
+              isZooming = false;
+            }
+          }
+        } else {
+          isHandDetected = false;
+          handDot.classList.remove("active");
+          handDot.style.background = "red";
+
+          gestureFeedback.innerText = "No Hand Detected";
+          gestureFeedback.style.color = "#666";
+
+          if (currentState === STATE.CELEBRATION) {
+            isZooming = false;
+            // SMART CLOSE LOGIC
+            // Only close if we were in 'hand' mode.
+            // If user manually opened it ('manual' mode), keep it open.
+            if (interactionMode === "hand") {
+              isGalleryOpen = false;
+            }
+          }
+        }
+      }
+
+      // Initialize Hands Globally
+      const hands = new Hands({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+      });
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+      hands.onResults(onHandResults);
+
+      // --- GAME LOGIC ---
+      // --- GAME LOGIC ---
+      function startCountdown() {
+        if (currentState !== STATE.IDLE) return;
+
+        currentState = STATE.COUNTDOWN;
+        countdownValue = 10;
+        const countdownOverlay = document.getElementById("countdown-overlay");
+        countdownOverlay.style.display = "block";
+        countdownOverlay.innerText = countdownValue;
+
+        // Hide entire header to remove the background "box"
+        document.querySelector(".header").style.display = "none";
+        btnCountdown.style.display = "none"; // Hide start button
+
+        if (countdownInterval) clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+          countdownValue--;
+          if (countdownValue > 0) {
+            countdownOverlay.innerText = countdownValue;
+          } else {
+            finishCountdown();
+          }
+        }, 1000);
+      }
+
+      function finishCountdown() {
+        clearInterval(countdownInterval);
+        document.getElementById("countdown-overlay").style.display = "none";
+        currentState = STATE.CELEBRATION;
+        targetMorph = 0.0; // Explode
+
+        // Show new text
+        const hnyText = document.getElementById("happy-new-year");
+        hnyText.style.opacity = 1;
+        hnyText.style.transform = "translate(-50%, -50%) scale(1)";
+
+        // Show new buttons (Dock items)
+        btnGallery.style.display = "block";
+        btnZoom.style.display = "block";
+        document.getElementById("btn-add-photo").style.display = "block";
+
+        for (let i = 0; i < 15; i++) fireworks.push(new Firework());
+      }
+
+      // --- ANIMATION LOOP ---
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const time = clock.getElapsedTime();
+
+        currentMorph += (targetMorph - currentMorph) * 0.05;
+        galaxyMat.uniforms.uMorph.value = currentMorph;
+        galaxyMat.uniforms.uTime.value = time;
+
+        // Camera Rotation: Drag OVERRIDES Hand
+        if (!isDragging && isHandDetected) {
+          const targetAngle = (handX - 0.5) * 3.0;
+          cameraAngle += (targetAngle - cameraAngle) * 0.05;
+        }
+
+        // Calculate Radius with Zoom
+        let baseRadius = 70 + (1.0 - currentMorph) * 10;
+        let finalRadius = baseRadius + zoomLevel;
+        finalRadius = Math.max(10, finalRadius); // Prevent too close
+
+        camera.position.x = Math.sin(cameraAngle) * finalRadius;
+        camera.position.z = Math.cos(cameraAngle) * finalRadius;
+        camera.lookAt(0, 0, 0);
+
+        if (currentState === STATE.CELEBRATION) {
+          if (Math.random() < 0.03) fireworks.push(new Firework());
+        }
+        for (let i = fireworks.length - 1; i >= 0; i--) {
+          fireworks[i].update();
+          if (fireworks[i].isDead) fireworks.splice(i, 1);
+        }
+
+        updatePolaroids();
+
+        // UI Sync (Ensure button matches state)
+        // Verify we aren't doing excessive DOM updates
+        const expectedText = isGalleryOpen ? "CLOSE GALLERY" : "OPEN GALLERY";
+        if (btnGallery.innerText !== expectedText) {
+          btnGallery.innerText = expectedText;
+          btnGallery.classList.toggle("active", isGalleryOpen);
+        }
+
+        composer.render();
+      }
+
+      function updatePolaroids() {
+        let bestIdx = -1;
+        let maxDot = -1.0;
+        const camDir = new THREE.Vector3();
+        camera.getWorldDirection(camDir);
+
+        polaroids.forEach((p, i) => {
+          const toObj = p.position.clone().sub(camera.position).normalize();
+          const dot = camDir.dot(toObj);
+          if (dot > maxDot) {
+            maxDot = dot;
+            bestIdx = i;
+          }
+        });
+
+        polaroids.forEach((p, i) => {
+          let target = p.userData.homePos;
+
+          if (currentState === STATE.CELEBRATION) {
+            if (isGalleryOpen) {
+              target = p.userData.galleryPos;
+              if (isZooming && i === bestIdx) {
+                const frontPos = camera.position
+                  .clone()
+                  .add(camDir.clone().multiplyScalar(15));
+                target = frontPos;
+                p.lookAt(camera.position);
+              } else {
+                p.lookAt(0, 0, 0);
+              }
+            }
+          }
+
+          p.position.lerp(target, 0.08);
+          if (!(isZooming && i === bestIdx)) {
+            p.rotation.z = Math.sin(clock.getElapsedTime() + i) * 0.05;
+          }
+        });
+      }
+
+      const btnStart = document.getElementById("btn-start");
+      btnStart.addEventListener("click", async () => {
+        btnStart.style.display = "none";
+        document.getElementById("loading-text").style.display = "block";
+
+        try {
+          const videoEl = document.getElementById("input_video");
+          videoEl.width = 640;
+          videoEl.height = 480;
+
+          // Hands is already initialized globally
+          let isProcessing = false;
+          try {
+            if (
+              !navigator.mediaDevices ||
+              !navigator.mediaDevices.getUserMedia
+            ) {
+              throw new Error(
+                "Camera API not supported or blocked (non-HTTPS?)"
+              );
+            }
+
+            const cameraUtils = new Camera(videoEl, {
+              onFrame: async () => {
+                await hands.send({ image: videoEl });
+              },
+              width: 640,
+              height: 480,
+            });
+            await cameraUtils.start();
+
+            // Camera Utils sets the srcObject of videoEl internally. We can just reuse it.
+            // Wait a moment for stream to be active
+            setTimeout(() => {
+              if (videoEl.srcObject) {
+                document.getElementById("preview_video").srcObject =
+                  videoEl.srcObject;
+              }
+            }, 500);
+          } catch (cameraError) {
+            console.warn("Camera init failed:", cameraError);
+            document.getElementById("loading-text").innerText =
+              "Mobile mode active - Controls only";
+
+            // Completely hide camera UI on failure/disable as requested
+            document.querySelector(".cam-frame").style.display = "none";
+            document.getElementById("gesture-feedback").style.display = "none";
+          }
+
+          document.getElementById("start-screen").style.opacity = 0;
+          setTimeout(
+            () =>
+              (document.getElementById("start-screen").style.display = "none"),
+            1000
+          );
+          animate();
+        } catch (e) {
+          console.error(e);
+          // Only alert if it's a critical system error, not just camera/media related
+          const msg = e.message.toLowerCase();
+          if (
+            !msg.includes("camera") &&
+            !msg.includes("media") &&
+            !msg.includes("navigator")
+          ) {
+            alert("System Error: " + e.message);
+          } else {
+            // If we missed the inner catch for some reason, ensure we still start
+            document.getElementById("start-screen").style.display = "none";
+            animate();
+          }
+        }
+      });
+
+      document.getElementById("file-input").addEventListener("change", (e) => {
+        for (let f of e.target.files) addPolaroid(URL.createObjectURL(f));
+      });
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        composer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>
