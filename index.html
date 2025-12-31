@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>PemTok New Year 2026 - Drag & Zoom</title>
 
     <link
@@ -204,19 +207,21 @@
           font-size: 8rem;
         }
 
-        /* Resize Camera for Mobile */
+        /* Resize Camera for Mobile - Move to bottom right to avoid blocking READY text */
         .cam-frame {
-          width: 60px;
-          height: 60px;
-          top: 10px;
-          right: 6px;
-          border-radius: 8px;
+          width: 80px;
+          height: 80px;
+          top: auto;
+          bottom: 120px;
+          right: 10px;
+          border-radius: 12px;
         }
         #gesture-feedback {
-          width: 40px;
-          top: 120px;
-          right: 6px;
-          font-size: 0.6rem;
+          width: 80px;
+          top: auto;
+          bottom: 50px;
+          right: 10px;
+          font-size: 0.65rem;
         }
       }
 
@@ -315,6 +320,102 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        gap: 30px;
+        padding: 20px;
+      }
+
+      /* Hand Gesture Guide */
+      #gesture-instructions {
+        color: rgba(255, 255, 255, 0.9);
+        font-family: "Inter", sans-serif;
+        font-size: 1.1rem;
+        text-align: center;
+        line-height: 1.8;
+        max-width: 600px;
+        margin: 0 auto 20px;
+      }
+      #gesture-instructions h3 {
+        color: #ffd700;
+        font-family: "Cinzel", serif;
+        font-size: 1.5rem;
+        margin-bottom: 25px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+      }
+      #gesture-instructions ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      #gesture-instructions li {
+        padding: 15px 25px;
+        background: rgba(255, 215, 0, 0.08);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+      }
+      #gesture-instructions li:hover {
+        background: rgba(255, 215, 0, 0.15);
+        border-color: rgba(255, 215, 0, 0.4);
+        transform: translateY(-2px);
+      }
+      #gesture-instructions .emoji {
+        font-size: 2em;
+        margin-right: 12px;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      #gesture-instructions strong {
+        color: #ffd700;
+        font-weight: 600;
+      }
+
+      /* Mobile Optimizations for Start Screen */
+      @media (max-width: 768px) {
+        #start-screen {
+          gap: 15px;
+          padding: 15px;
+        }
+        #gesture-instructions {
+          font-size: 0.75rem;
+          max-width: 95%;
+          margin: 0 auto 10px;
+        }
+        #gesture-instructions h3 {
+          font-size: 0.95rem;
+          letter-spacing: 1.5px;
+          margin-bottom: 12px;
+        }
+        #gesture-instructions ul {
+          gap: 8px;
+        }
+        #gesture-instructions li {
+          padding: 8px 12px;
+          border-radius: 10px;
+        }
+        #gesture-instructions .emoji {
+          font-size: 1.2em;
+          margin-right: 6px;
+        }
+        .btn-gold {
+          padding: 12px 30px;
+          font-size: 1rem;
+          letter-spacing: 2px;
+        }
+        .btn-gold .full-text {
+          display: none !important;
+        }
+        .btn-gold .short-text {
+          display: inline !important;
+        }
+        .upload-trigger {
+          font-size: 0.75rem;
+          padding: 8px 18px;
+        }
       }
 
       /* Start Button - Premium Glass */
@@ -334,6 +435,13 @@
         border-radius: 60px;
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
+      }
+      /* Desktop: show full text, hide short text */
+      .btn-gold .short-text {
+        display: none;
+      }
+      .btn-gold .full-text {
+        display: inline;
       }
       .btn-gold:hover {
         background: rgba(255, 215, 0, 0.25);
@@ -441,7 +549,33 @@
     <video id="input_video" playsinline></video>
 
     <div id="start-screen">
-      <button class="btn-gold" id="btn-start">Start Experience</button>
+      <div id="gesture-instructions">
+        <h3>✨ How to Use ✨</h3>
+        <ul>
+          <li>
+            <span class="emoji">✊</span> <strong>Fist</strong> = Start
+            countdown
+          </li>
+          <li>
+            <span class="emoji">🖐</span> <strong>Open Hand</strong> = Gallery
+          </li>
+          <li>
+            <span class="emoji">👋</span> <strong>Drag</strong> = Rotate 360°
+          </li>
+        </ul>
+      </div>
+      <button class="btn-gold" id="btn-start">
+        <span class="full-text">Start Experience</span
+        ><span class="short-text">START</span>
+      </button>
+      <button
+        class="upload-trigger"
+        id="btn-add-photo-start"
+        onclick="document.getElementById('file-input').click()"
+        style="margin-top: 15px"
+      >
+        + Add Photo
+      </button>
       <div id="loading-text">Initializing...</div>
     </div>
 
