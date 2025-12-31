@@ -192,10 +192,6 @@
           width: auto;
           max-width: 90%;
         }
-        .action-btn {
-          font-size: 0.8rem;
-          padding: 10px 12px;
-        }
         #main-title {
           font-size: 1.8rem;
           letter-spacing: 2px;
@@ -222,17 +218,18 @@
           font-size: 0.55rem !important;
           padding: 6px !important;
         }
-        /* Shorten button text on mobile */
+        /* Adjust button text on mobile */
         .action-btn {
           font-size: 0.7rem;
           padding: 8px 10px;
           white-space: nowrap;
         }
-        #btn-countdown::after {
-          content: "START";
+        /* Hide full text and show short text for countdown button on mobile */
+        #btn-countdown .full-text {
+          display: none !important;
         }
-        #btn-countdown {
-          font-size: 0;
+        #btn-countdown .short-text {
+          display: inline !important;
         }
       }
 
@@ -525,7 +522,10 @@
 
       <!-- Manual Controls (Dock) -->
       <div id="manual-controls">
-        <button id="btn-countdown" class="action-btn">START COUNTDOWN</button>
+        <button id="btn-countdown" class="action-btn">
+          <span class="full-text">START COUNTDOWN</span>
+          <span class="short-text" style="display: none">START COUNTDOWN</span>
+        </button>
         <button id="btn-gallery" class="action-btn" style="display: none">
           OPEN GALLERY
         </button>
@@ -615,7 +615,9 @@
 
       // Manual triggers
       let isGalleryOpen = false;
-      let isZooming = false;
+      // Split Zoom state to prevent conflicts
+      let isButtonZooming = false;
+      let isHandZooming = false;
 
       // Mouse Navigation
       let isDragging = false;
@@ -701,30 +703,61 @@
 
       btnCountdown.addEventListener("click", startCountdown);
 
+      // Track if gallery was opened by zoom button
+      let galleryOpenedByZoom = false;
+
       btnGallery.addEventListener("click", () => {
         isGalleryOpen = !isGalleryOpen;
         interactionMode = "manual"; // USER INTENT: Manual override
         btnGallery.innerText = isGalleryOpen ? "CLOSE GALLERY" : "OPEN GALLERY";
         btnGallery.classList.toggle("active", isGalleryOpen);
+
+        // Reset flag since user manually toggled gallery
+        galleryOpenedByZoom = false;
       });
 
-      btnZoom.addEventListener("mousedown", () => {
-        isZooming = true;
-        btnZoom.classList.add("active");
-      });
-      btnZoom.addEventListener("mouseup", () => {
-        isZooming = false;
-        btnZoom.classList.remove("active");
-      });
-      btnZoom.addEventListener("touchstart", (e) => {
+      // Zoom button handlers - support both mouse and touch
+      const handleZoomStart = (e) => {
         e.preventDefault();
-        isZooming = true;
+        e.stopPropagation();
+
+        // Auto-open gallery if not already open
+        if (!isGalleryOpen) {
+          isGalleryOpen = true;
+          galleryOpenedByZoom = true;
+          interactionMode = "manual";
+          btnGallery.innerText = "CLOSE GALLERY";
+          btnGallery.classList.add("active");
+        }
+
+        isButtonZooming = true; // Use separate flag
         btnZoom.classList.add("active");
-      });
-      btnZoom.addEventListener("touchend", (e) => {
+      };
+
+      const handleZoomEnd = (e) => {
         e.preventDefault();
-        isZooming = false;
+        e.stopPropagation();
+        isButtonZooming = false; // Use separate flag
         btnZoom.classList.remove("active");
+
+        // Auto-close gallery if it was opened by zoom button
+        if (galleryOpenedByZoom) {
+          isGalleryOpen = false;
+          galleryOpenedByZoom = false;
+          btnGallery.innerText = "OPEN GALLERY";
+          btnGallery.classList.remove("active");
+        }
+      };
+
+      btnZoom.addEventListener("mousedown", handleZoomStart);
+      btnZoom.addEventListener("mouseup", handleZoomEnd);
+      btnZoom.addEventListener("mouseleave", handleZoomEnd);
+      btnZoom.addEventListener("touchstart", handleZoomStart, {
+        passive: false,
+      });
+      btnZoom.addEventListener("touchend", handleZoomEnd, { passive: false });
+      btnZoom.addEventListener("touchcancel", handleZoomEnd, {
+        passive: false,
       });
 
       // --- SHADER PARTICLES ---
@@ -1025,7 +1058,7 @@
               if (!isGalleryOpen) {
                 isGalleryOpen = true;
               }
-              isZooming = true;
+              isHandZooming = true; // Use separate flag
             }
           } else if (distance > 0.2) {
             // OPEN HAND
@@ -1036,7 +1069,7 @@
             if (currentState === STATE.CELEBRATION) {
               // Open hand ensures gallery is open, but doesn't force close if we relax
               isGalleryOpen = true;
-              isZooming = false;
+              isHandZooming = false; // Use separate flag
             }
           } else {
             // Neutral
@@ -1045,7 +1078,7 @@
             gestureFeedback.style.color = "#fff";
 
             if (currentState === STATE.CELEBRATION) {
-              isZooming = false;
+              isHandZooming = false; // Use separate flag
             }
           }
         } else {
@@ -1057,7 +1090,7 @@
           gestureFeedback.style.color = "#666";
 
           if (currentState === STATE.CELEBRATION) {
-            isZooming = false;
+            isHandZooming = false; // Use separate flag
             // SMART CLOSE LOGIC
             // Only close if we were in 'hand' mode.
             // If user manually opened it ('manual' mode), keep it open.
@@ -1188,13 +1221,15 @@
           }
         });
 
+        const effectiveZooming = isButtonZooming || isHandZooming; // Combined zooming state
+
         polaroids.forEach((p, i) => {
           let target = p.userData.homePos;
 
           if (currentState === STATE.CELEBRATION) {
             if (isGalleryOpen) {
               target = p.userData.galleryPos;
-              if (isZooming && i === bestIdx) {
+              if (effectiveZooming && i === bestIdx) {
                 const frontPos = camera.position
                   .clone()
                   .add(camDir.clone().multiplyScalar(15));
@@ -1207,7 +1242,7 @@
           }
 
           p.position.lerp(target, 0.08);
-          if (!(isZooming && i === bestIdx)) {
+          if (!(effectiveZooming && i === bestIdx)) {
             p.rotation.z = Math.sin(clock.getElapsedTime() + i) * 0.05;
           }
         });
